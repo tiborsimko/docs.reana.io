@@ -5,6 +5,7 @@ The list of contributors in alphabetical order:
 - [Adelina Lintuluoto](https://orcid.org/0000-0002-0726-1452)
 - [Agisilaos Kounelis](https://orcid.org/0000-0001-9312-3189)
 - [Audrius Mecionis](https://orcid.org/0000-0002-3759-1663)
+- [Cameron McClymont](https://orcid.org/0009-0002-0176-5251)
 - [Clemens Lange](https://orcid.org/0000-0002-3632-3157)
 - [Daan Rosendal](https://orcid.org/0000-0002-3447-9000)
 - [Diego Rodriguez](https://orcid.org/0000-0003-0649-2002)

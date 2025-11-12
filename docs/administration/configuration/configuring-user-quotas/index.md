@@ -25,7 +25,7 @@ Here is an example of a mixed configuration where, in addition to nightly CPU an
 ```yaml
 quota:
   enabled: true
-  # update quota usage everyday at 3AM
+  # update quota usage every day at 3AM
   periodic_update_policy: "0 3 * * *"
   # after workflow finishes or fails update its cpu usage
   workflow_termination_update_policy: "cpu"
@@ -50,19 +50,74 @@ Individual users will be able to run as many workflows as they want, provided th
 ## Setting individual quota limits
 
 In addition to setting the default quota limits for all users, you may want to set different quota usage limits for different specific groups of users.
-This can be done via the `reana-admin` tool that is present in the `reana-server` pod.
+This can be done via the `reana-admin` tool that is present in the `reana-server` pod or via the REST API.
 
-Log in to the `reana-server` pod:
+### Using the `reana-admin` tool
+
+Obtain the administrator access token:
 
 ```console
-$ kubectl exec -i -t deployment/reana-server -- /bin/bash
+$ export REANA_ACCESS_TOKEN=$(kubectl get secret reana-admin-access-token -o json | jq -r '.data | map_values(@base64d) | .ADMIN_ACCESS_TOKEN')
 ```
 
 You can now set a custom quota limit to selected users:
 
 ```console
-# flask reana-admin quota-set -e john.doe@example.org -r disk -l 250000 --admin-access-token $REANA_ACCESS_TOKEN
+$ kubectl exec -i -t deployment/reana-server -- flask reana-admin quota-set -e john.doe@example.org -r disk -l 250000 --admin-access-token $REANA_ACCESS_TOKEN
 Quota limit 250000 for 'disk (shared storage)' successfully set to users ('john.doe@example.org',).
 ```
 
-You can learn more about the `quota-set` administrative command options by running `flask reana-admin quota-set --help`.
+You can learn more about the `quota-set` administrative command options by running `kubectl exec -i -t deployment/reana-server -- flask reana-admin quota-set --help`.
+
+### Using the Quota management REST API
+
+As of REANA 0.95 release series, you can also set quota limits for specific users using the Quota management REST API at `/api/quota`.
+
+All Quota management REST API requests must include the `X-Quota-Management-Secret` header containing the configured secret.
+This secret should be set in your Helm `values.yaml` file:
+
+```yaml
+components:
+  reana_server:
+    environment:
+      REANA_QUOTA_MANAGEMENT_SECRET: "my_secret"
+```
+
+If the secret is unset or empty, the Quota management REST API is disabled.
+
+To get the current CPU quota limit and usage for the user `john.doe@example.org`, run:
+
+```console
+$ curl --fail-with-body -v -H "X-Quota-Management-Secret: my_secret" \
+       "https://reana.example.org/api/quota?email=john.doe@example.org&resource_type=cpu"
+```
+
+The response contains the current limit and usage for the given user and resource:
+
+```json
+{
+  "limit": 36000000,
+  "message": "OK",
+  "usage": 12000000
+}
+```
+
+To set a custom disk quota limit of 250 GiB for the user `john.doe@example.org`, run:
+
+```console
+$ curl --fail-with-body -v -H "X-Quota-Management-Secret: my_secret" \
+       -H "Content-Type: application/json" \
+       -X POST \
+       -d '{"email": "john.doe@example.org", "resource_type": "disk", "limit": 250000000000}' \
+       "https://reana.example.org/api/quota"
+```
+
+The response contains the new limit and the current usage for the given user and resource:
+
+```json
+{
+  "limit": 250000000000,
+  "message": "OK",
+  "usage": 12000000
+}
+```
