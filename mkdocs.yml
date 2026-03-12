@@ -27,14 +27,14 @@ theme:
 # Customization
 extra:
   social:
-  - type: 'github'
-    link: 'https://github.com/reanahub'
-  - type: 'twitter'
-    link: 'https://twitter.com/reanahub'
-  - type: 'comments'
-    link: 'https://forum.reana.io'
-  - type: 'globe'
-    link: 'http://www.reana.io'
+    - type: 'github'
+      link: 'https://github.com/reanahub'
+    - type: 'twitter'
+      link: 'https://twitter.com/reanahub'
+    - type: 'comments'
+      link: 'https://forum.reana.io'
+    - type: 'globe'
+      link: 'http://www.reana.io'
 extra_css:
   - stylesheets/extra.css
 
