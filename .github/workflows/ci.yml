@@ -1,5 +1,5 @@
 # This file is part of REANA.
-# Copyright (C) 2020, 2023, 2024, 2026 CERN.
+# Copyright (C) 2020, 2024, 2026 CERN.
 #
 # REANA is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -9,6 +9,51 @@ name: ci
 on: [push, pull_request]
 
 jobs:
+  build-docs:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby 2.6
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "2.6"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install project dependences
+        run: |
+          sudo apt-get update -y
+          gem install awesome_bot
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint docs
+        run: ./run-tests.sh --lint-docstyle
+
+      - name: Build docs
+        run: ./run-tests.sh --build-docs
+
+  format-shfmt:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check shell script code formatting
+        run: |
+          sudo apt-get install shfmt
+          ./run-tests.sh --format-shfmt
+
   lint-commitlint:
     runs-on: ubuntu-24.04
     steps:
@@ -46,47 +91,11 @@ jobs:
           sudo apt-get install shellcheck
           ./run-tests.sh --lint-shellcheck
 
-  build-docs:
+  lint-yamllint:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up Ruby 2.6
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "2.6"
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.12
-
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-
-      - name: Install project dependences
-        run: |
-          sudo apt-get update -y
-          gem install awesome_bot
-          pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Lint docs
-        run: ./run-tests.sh --lint-docstyle
-
-      - name: Build docs
-        run: ./run-tests.sh --build-docs
-
-lint-yamllint:
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5

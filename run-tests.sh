@@ -14,6 +14,10 @@ docs_build() {
     rm -rf site/
 }
 
+format_shfmt() {
+    shfmt -d .
+}
+
 lint_commitlint() {
     from=${2:-master}
     to=${3:-HEAD}
@@ -40,7 +44,7 @@ lint_commitlint() {
         # (iii) check absence of merge commits in feature branches
         if [ "$commit_number_of_parents" -gt 1 ]; then
             if echo "$commit_title" | grep -qE "^chore\(.*\): merge "; then
-                break  # skip checking maint-to-master merge commits
+                break # skip checking maint-to-master merge commits
             else
                 echo "✖   Merge commits are not allowed in feature branches: $commit_title"
                 found=1
@@ -67,6 +71,7 @@ lint_yamllint() {
 
 all() {
     docs_build
+    format_shfmt
     lint_commitlint
     lint_docstyle
     lint_shellcheck
@@ -78,6 +83,7 @@ help() {
     echo "Options:"
     echo "  --all              Perform all checks [default]"
     echo "  --docs-build       Check docs build"
+    echo "  --format-shfmt     Check formatting of shell scripts"
     echo "  --help             Display this help message"
     echo "  --lint-commitlint  Check linting of commit messages"
     echo "  --lint-docstyle    Check linting of documentation"
@@ -95,6 +101,7 @@ case $arg in
 --all) all ;;
 --help) help ;;
 --docs-build) docs_build ;;
+--format-shfmt) format_shfmt ;;
 --lint-commitlint) lint_commitlint "$@" ;;
 --lint-docstyle) lint_docstyle ;;
 --lint-shellcheck) lint_shellcheck ;;
