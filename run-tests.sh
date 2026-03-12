@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # This file is part of REANA.
-# Copyright (C) 2020, 2024 CERN.
+# Copyright (C) 2019, 2020, 2024, 2025, 2026 CERN.
 #
 # REANA is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -9,11 +9,20 @@
 set -o errexit
 set -o nounset
 
-check_commitlint () {
+docs_build() {
+    mkdocs build -v
+    rm -rf site/
+}
+
+lint_commitlint() {
     from=${2:-master}
     to=${3:-HEAD}
     pr=${4:-[0-9]+}
-    npx commitlint --from="$from" --to="$to"
+    if command -v commitlint >/dev/null 2>&1; then
+        commitlint --from="$from" --to="$to"
+    else
+        npx commitlint --from="$from" --to="$to"
+    fi
     found=0
     while IFS= read -r line; do
         commit_hash=$(echo "$line" | cut -d ' ' -f 1)
@@ -43,32 +52,45 @@ check_commitlint () {
     fi
 }
 
-check_shellcheck () {
-    find . -name "*.sh" -exec shellcheck {} \+
-}
-
-check_docstyle () {
+lint_docstyle() {
     npx -p markdownlint-cli markdownlint docs/*
     awesome_bot --allow-dupe --skip-save-results --allow-redirect docs/**/*.md
 }
 
-build_docs () {
-    mkdocs build -v
-    rm -rf site/
+lint_shellcheck() {
+    find . -name "*.sh" -exec shellcheck {} \+
+}
+
+all() {
+    docs_build
+    lint_commitlint
+    lint_docstyle
+    lint_shellcheck
+}
+
+help() {
+    echo "Usage: $0 [options]"
+    echo "Options:"
+    echo "  --all              Perform all checks [default]"
+    echo "  --docs-build       Check docs build"
+    echo "  --help             Display this help message"
+    echo "  --lint-commitlint  Check linting of commit messages"
+    echo "  --lint-docstyle    Check linting of documentation"
+    echo "  --lint-shellcheck  Check linting of shell scripts"
 }
 
 if [ $# -eq 0 ]; then
-    check_commitlint
-    check_shellcheck
-    check_docstyle
-    build_docs
+    all
+    exit 0
 fi
 
 arg="$1"
 case $arg in
-    --check-commitlint) check_commitlint "$@";;
-    --check-shellcheck) check_shellcheck;;
-    --check-docstyle) check_docstyle;;
-    --build-docs) build_docs;;
-    *) echo "[ERROR] Invalid argument '$arg'. Exiting." && exit 1;;
+--all) all ;;
+--help) help ;;
+--docs-build) docs_build ;;
+--lint-commitlint) lint_commitlint "$@" ;;
+--lint-docstyle) lint_docstyle ;;
+--lint-shellcheck) lint_shellcheck ;;
+*) echo "[ERROR] Invalid argument '$arg'. Exiting." && help && exit 1 ;;
 esac
