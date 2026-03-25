@@ -56,8 +56,11 @@ lint_commitlint() {
     fi
 }
 
-lint_docstyle() {
-    npx -p markdownlint-cli markdownlint docs/*
+lint_markdownlint() {
+    markdownlint-cli2 "**/*.md"
+}
+
+lint_awesome_bot() {
     awesome_bot --allow-dupe --skip-save-results --allow-redirect docs/**/*.md
 }
 
@@ -72,8 +75,9 @@ lint_yamllint() {
 all() {
     docs_build
     format_shfmt
+    lint_awesome_bot
     lint_commitlint
-    lint_docstyle
+    lint_markdownlint
     lint_shellcheck
     lint_yamllint
 }
@@ -81,14 +85,15 @@ all() {
 help() {
     echo "Usage: $0 [options]"
     echo "Options:"
-    echo "  --all              Perform all checks [default]"
-    echo "  --docs-build       Check docs build"
-    echo "  --format-shfmt     Check formatting of shell scripts"
-    echo "  --help             Display this help message"
-    echo "  --lint-commitlint  Check linting of commit messages"
-    echo "  --lint-docstyle    Check linting of documentation"
-    echo "  --lint-shellcheck  Check linting of shell scripts"
-    echo "  --lint-yamllint    Check linting of YAML files"
+    echo "  --all                Perform all checks [default]"
+    echo "  --docs-build         Check docs build"
+    echo "  --format-shfmt       Check formatting of shell scripts"
+    echo "  --help               Display this help message"
+    echo "  --lint-awesome-bot   Check linting of links in documentation"
+    echo "  --lint-commitlint    Check linting of commit messages"
+    echo "  --lint-markdownlint  Check linting of Markdown documentation"
+    echo "  --lint-shellcheck    Check linting of shell scripts"
+    echo "  --lint-yamllint      Check linting of YAML files"
 }
 
 if [ $# -eq 0 ]; then
@@ -102,8 +107,9 @@ case $arg in
 --help) help ;;
 --docs-build) docs_build ;;
 --format-shfmt) format_shfmt ;;
+--lint-awesome-bot) lint_awesome_bot ;;
 --lint-commitlint) lint_commitlint "$@" ;;
---lint-docstyle) lint_docstyle ;;
+--lint-markdownlint) lint_markdownlint ;;
 --lint-shellcheck) lint_shellcheck ;;
 --lint-yamllint) lint_yamllint ;;
 *) echo "[ERROR] Invalid argument '$arg'. Exiting." && help && exit 1 ;;

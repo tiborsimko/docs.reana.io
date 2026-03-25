@@ -1,0 +1,18 @@
+# Allow prompt dollar sign in console examples without showing output
+MD014: false
+# Allow code block style variations
+MD046: false
+# Allow long lines
+MD013: false
+# Allow emphasis as heading
+MD036: false
+# Allow trailing punctuation in headings
+MD026: false
+# Allow non-standard indentation in unordered lists
+MD007: false
+# Allow inline HTML
+MD033: false
+# Allow non-descriptive link text
+MD059: false
+# Allow flexible table column style
+MD060: false

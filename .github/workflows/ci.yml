@@ -15,33 +15,46 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Ruby 2.6
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "2.6"
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: 3.12
 
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-
-      - name: Install project dependences
+      - name: Build docs
         run: |
-          sudo apt-get update -y
-          gem install awesome_bot
           pip install --upgrade pip
           pip install -r requirements.txt
+          ./run-tests.sh --docs-build
 
-      - name: Lint docs
-        run: ./run-tests.sh --lint-docstyle
+  lint-awesome-bot:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Build docs
-        run: ./run-tests.sh --build-docs
+      - name: Set up Ruby 2.6
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "2.6"
+
+      - name: Check links in documentation
+        run: |
+          gem install awesome_bot
+          ./run-tests.sh --lint-awesome-bot
+
+  lint-markdownlint:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+
+      - name: Lint Markdown files
+        run: |
+          npm install markdownlint-cli2 --global
+          ./run-tests.sh --lint-markdownlint
 
   format-shfmt:
     runs-on: ubuntu-24.04
