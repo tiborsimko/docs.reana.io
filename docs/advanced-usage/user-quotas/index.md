@@ -55,6 +55,25 @@ corner of the web interface:
     means that the cluster administrators did not enable the user quotas feature on
     this REANA instance.
 
+## Renewable CPU quotas
+
+As of REANA 0.95 release series, some deployments track CPU usage inside
+recurring quota periods, for example every three months, instead of over the
+whole lifetime of your account. This renewable-quota mechanism currently
+applies only to CPU quotas.
+
+When renewable CPU quotas are enabled, the profile page shows the current
+CPU quota period together with your CPU usage. The start of each period is
+derived from your account creation time and from the period length chosen
+by the administrators.
+
+!["CPU quota period on the profile page"](/images/ui-profile-cpu-quota-period.png){.screenshot-browser-mockup}
+
+If the administrators change your CPU quota period, the new period start is
+stored immediately. However, the displayed CPU usage is recalculated only during
+the next quota usage update cycle. Until then, the usage number may still
+reflect the previous period.
+
 ## What to do when quotas are exceeded
 
 If you exceed your user quota of one of the resources, you will not be able to

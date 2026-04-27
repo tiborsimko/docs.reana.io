@@ -47,6 +47,49 @@ Individual users will be able to run as many workflows as they want, provided th
 !!! warning
     If the default quota values are changed, they will only be applied to newly created users. Users that already exist will not be affected by this change.
 
+## Setting the default CPU quota period
+
+As of REANA 0.95 release series, in addition to setting CPU usage limits, you
+can configure REANA to track CPU time inside recurring quota periods instead
+of over the whole lifetime of a user account. Renewable quota periods are
+currently supported only for the `cpu` resource.
+
+To enable a deployment-wide default CPU quota period for newly created
+users, set the following Helm value to a positive integer:
+
+```yaml
+quota:
+  cpu_period_reset_months: 3
+```
+
+Set `quota.cpu_period_reset_months` to `0` to disable the deployment-wide
+default. The chosen value is stored per user as `quota_period_months`.
+
+When this value is set, each newly created user receives:
+
+- `quota_period_months` which defines the length of the CPU quota period
+- `quota_period_start_at` which defines the start of the current period
+
+The current period is derived from the user account creation time. For
+example, for a user created on `2026-04-14T13:06:32` and a three-month period,
+REANA will track CPU usage in successive periods such as `2026-04-14` to
+`2026-07-14`, `2026-07-14` to `2026-10-14`, and so on.
+
+As with default quota limits, changing the deployment-wide CPU quota period
+only affects newly created users. Existing users keep their current
+settings until they are updated manually.
+
+If you want to backfill the deployment default CPU quota period for already
+existing users, run:
+
+```console
+$ kubectl exec -i -t deployment/reana-server -- reana-db quota init-default-period
+Initialised the default CPU quota period for 42 existing users.
+```
+
+This command only initializes users who do not already have a custom CPU
+quota period configured.
+
 ## Setting individual quota limits
 
 In addition to setting the default quota limits for all users, you may want to set different quota usage limits for different specific groups of users.
@@ -121,3 +164,77 @@ The response contains the new limit and the current usage for the given user and
   "usage": 12000000
 }
 ```
+
+## Setting per-user CPU quota periods
+
+As of REANA 0.95 release series, you can also configure CPU quota periods on
+a per-user basis. For example, to set a two-month CPU quota period for one
+user, run:
+
+```console
+$ kubectl exec -i -t deployment/reana-server -- flask reana-admin quota-set-period -e john.doe@example.org --resource cpu --quota-period-months 2 --admin-access-token $REANA_ACCESS_TOKEN
+Periodic quota fields updated successfully.
+```
+
+You can optionally provide the current period start explicitly:
+
+```console
+$ kubectl exec -i -t deployment/reana-server -- flask reana-admin quota-set-period -e john.doe@example.org --resource cpu --quota-period-months 2 --quota-period-start-at 2026-05-01T00:00:00Z --admin-access-token $REANA_ACCESS_TOKEN
+Periodic quota fields updated successfully.
+```
+
+If you omit `--quota-period-start-at`, REANA preserves the currently stored
+period start. If no period start has been stored yet, REANA initialises it from
+the user account creation time and the configured period length.
+The `--quota-period-start-at` value may also be set in the future.
+Until that date is reached, no CPU usage is recorded against the new period
+yet.
+
+To force-start a new CPU quota period for a user, reuse
+`quota-set-period` and provide only the new `--quota-period-start-at`:
+
+```console
+$ kubectl exec -i -t deployment/reana-server -- flask reana-admin quota-set-period -e john.doe@example.org --resource cpu --quota-period-start-at 2026-07-01T00:00:00Z --admin-access-token $REANA_ACCESS_TOKEN
+Periodic quota fields updated successfully.
+```
+
+For service integrations, the same periodic CPU fields can be managed over the
+quota management REST API:
+
+```console
+$ curl -X PATCH https://reana.example.org/api/quota \
+    -H 'Content-Type: application/json' \
+    -H "X-Quota-Management-Secret: $REANA_QUOTA_MANAGEMENT_SECRET" \
+    --data '{
+      "email": "john.doe@example.org",
+      "resource_type": "cpu",
+      "quota_period_months": 2,
+      "quota_period_start_at": "2026-05-01T00:00:00Z"
+    }'
+```
+
+The REST API accepts one or both of `quota_period_months` and
+`quota_period_start_at`.
+
+## Recalculating CPU usage after changing a quota period
+
+Changing `quota_period_months` or `quota_period_start_at` updates the stored
+period metadata immediately, but it does not by itself recompute the
+accumulated CPU usage for the new period.
+
+CPU usage is recalculated when the next quota usage update runs, either
+automatically on the configured `quota.periodic_update_policy` schedule, or
+manually by triggering an ad-hoc run of the same cronjob.
+
+To force an immediate refresh, spawn a one-off job from the existing
+`reana-resource-quota-update` cronjob:
+
+```console
+$ kubectl create job --from=cronjob/reana-resource-quota-update \
+    reana-resource-quota-update-manual-$(date +%s)
+```
+
+This command advances the current CPU quota period if needed and recalculates
+each user's CPU usage for the current period only. This is particularly
+useful after changing quota period settings, when you want the web UI and
+REST API responses to reflect the new period immediately.
