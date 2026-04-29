@@ -13,19 +13,25 @@ you can proceed as follows.
 **2.** Deploy REANA cluster:
 
 ```{ .console .copy-to-clipboard }
-$ wget https://raw.githubusercontent.com/reanahub/reana/maint-0.9/etc/kind-localhost-30443.yaml
+$ wget https://raw.githubusercontent.com/reanahub/reana/master/etc/kind-localhost-30443.yaml
 $ kind create cluster --config kind-localhost-30443.yaml
-$ wget https://raw.githubusercontent.com/reanahub/reana/maint-0.9/scripts/prefetch-images.sh
+$ wget https://raw.githubusercontent.com/reanahub/reana/master/scripts/prefetch-images.sh
 $ sh prefetch-images.sh
+$ wget https://raw.githubusercontent.com/reanahub/reana/master/etc/myvalues.yaml
 $ helm repo add reanahub https://reanahub.github.io/reana
 $ helm repo update
-$ helm install reana reanahub/reana --namespace reana --create-namespace --wait
+$ helm install reana reanahub/reana --namespace reana --create-namespace --wait -f myvalues.yaml
 ```
+
+The `myvalues.yaml` file contains illustrative weak credentials suitable for local
+single-user trial deployments. **Do not use these values in production.** Production
+deployments must replace every secret with a strong, randomly-generated value; see
+[deploying at scale](../deploying-at-scale/index.md) for the recommended setup.
 
 **3.** Create REANA admin user:
 
 ```{ .console .copy-to-clipboard }
-$ wget https://raw.githubusercontent.com/reanahub/reana/maint-0.9/scripts/create-admin-user.sh
+$ wget https://raw.githubusercontent.com/reanahub/reana/master/scripts/create-admin-user.sh
 $ sh create-admin-user.sh reana reana john.doe@example.org mysecretpassword
 ```
 
