@@ -13,7 +13,7 @@ and [upload it and your CERN username as secrets to REANA](../../access-control/
 ## Specifying compute backend
 
 In order to execute certain steps of a workflow on the CERN HTCondor cluster
-you must specify ``htcondorcern`` as the step's execution backend in the
+you must specify `htcondorcern` as the step's execution backend in the
 workflow specification.
 
 ```yaml hl_lines="6"
@@ -89,3 +89,108 @@ If you are part of a HTCondor accounting group and you would like to set account
         commands:
             - python helloworld.py
 ```
+
+## Requesting CPU, memory, and disk resources
+
+As of REANA 0.95 release series, you can request specific CPU, memory,
+and disk resources for individual HTCondor steps.
+
+HTCondor matches jobs against execution machines based on the resources
+they request. By default, REANA does not set any explicit resource
+request and the job inherits the pool's defaults. If your step needs
+more CPU cores, memory, or scratch disk than the default slot offers,
+you can ask for them explicitly via three optional hints.
+
+### Number of CPU cores
+
+To request a specific number of CPU cores for the step, set
+`htcondor_request_cpus` to a positive integer (passed as a string).
+This is translated to the `RequestCpus` HTCondor submit attribute.
+
+```yaml hl_lines="7"
+
+   # Serial example
+   ...
+   steps:
+      - name: reana_demo_helloworld_htcondorcern
+        environment: 'python:2.7-slim'
+        compute_backend: htcondorcern
+        htcondor_request_cpus: '4'
+        commands:
+            - python helloworld.py
+```
+
+### Memory
+
+To request a specific amount of memory for the step, set
+`htcondor_request_memory` to a positive integer with an optional unit suffix.
+The accepted suffixes are `K`, `KB`, `M`, `MB`, `G`, `GB`, `T`, `TB`
+(case-insensitive, binary multipliers). If you omit the suffix the value is
+interpreted as megabytes, matching HTCondor's native `RequestMemory`
+convention. Kubernetes-style `Mi`/`Gi` suffixes are not accepted here; this is
+an HTCondor hint, not a Kubernetes one.
+
+```yaml hl_lines="7"
+
+   # Serial example
+   ...
+   steps:
+      - name: reana_demo_helloworld_htcondorcern
+        environment: 'python:2.7-slim'
+        compute_backend: htcondorcern
+        htcondor_request_memory: '4 GB'
+        commands:
+            - python helloworld.py
+```
+
+### Disk
+
+To request a specific amount of scratch disk for the step, set
+`htcondor_request_disk` to a positive integer with an optional unit suffix. The
+accepted suffixes are the same as for memory. If you omit the suffix the value
+is interpreted as kilobytes, matching HTCondor's native `RequestDisk`
+convention.
+
+```yaml hl_lines="7"
+
+   # Serial example
+   ...
+   steps:
+      - name: reana_demo_helloworld_htcondorcern
+        environment: 'python:2.7-slim'
+        compute_backend: htcondorcern
+        htcondor_request_disk: '10 GB'
+        commands:
+            - python helloworld.py
+```
+
+## Selecting the execution machine
+
+As of REANA 0.95 release series, you can also constrain which execution
+machines HTCondor is allowed to pick for a step.
+
+For finer-grained control over which execution machines HTCondor may schedule
+the step on, you can pass a raw ClassAd `Requirements` expression via
+`htcondor_requirements`. The string is forwarded verbatim to the HTCondor
+submit file's `Requirements` attribute, so any ClassAd expression accepted by
+HTCondor is allowed.
+
+A common use case is restricting the step to a specific CPU architecture, for
+example to run only on ARM (`aarch64`) machines:
+
+```yaml hl_lines="7"
+
+   # Serial example
+   ...
+   steps:
+      - name: reana_demo_helloworld_htcondorcern
+        environment: 'python:2.7-slim'
+        compute_backend: htcondorcern
+        htcondor_requirements: '(Arch =?= "aarch64")'
+        commands:
+            - python helloworld.py
+```
+
+Note that overly restrictive requirements may leave the job idle in the queue
+indefinitely if no matching machine is available, so prefer loosening the
+constraint (or removing it altogether) when you no longer need it.
